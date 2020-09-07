@@ -5,6 +5,7 @@ import numpy as np
 from tqdm import tqdm
 from typing import NewType
 from tools.util import file_utils
+import os
 
 LoadImgCallback = NewType(
     'ImgLoadCallback',
@@ -84,21 +85,25 @@ class ImageVectorizer:
         np.save(img_path, img_features.numpy())
 
 
-def get_img_embeddings_from_folder(vectorizer, directory):
+def from_dir(vectorizer, folder, rewrite=False):
     """
     :vectorizer: model for extracting features from images
     :img_paths: iterable of image paths with extentions
     """
 
-    img_paths = file_utils.path_get_file_list(directory, file_types=['img'])
-    get_img_embeddings_from_paths(vectorizer, img_paths)
+    img_paths = file_utils.path_get_file_list(folder, ['img'])[0]
+    from_paths(vectorizer, img_paths, rewrite)
 
 
-def get_img_embeddings_from_paths(vectorizer, img_paths):
+def from_paths(vectorizer, img_paths, rewrite=False):
     """
     :vectorizer: model for extracting features from images
     :img_paths: iterable of image paths with extentions
     """
+
+    if not rewrite:
+        img_paths = [x for x in img_paths
+                     if not os.path.exists(x.split('.')[0] + '.np')]
 
     unqiue_images = set(img_paths)
     print('{} images, {} unique'.format(len(img_paths), len(unqiue_images)))
