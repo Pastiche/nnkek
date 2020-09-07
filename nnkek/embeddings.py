@@ -103,7 +103,7 @@ def from_paths(vectorizer, img_paths, rewrite=False):
 
     if not rewrite:
         img_paths = [x for x in img_paths
-                     if not os.path.exists(x.split('.')[0] + '.np')]
+                     if not os.path.exists(x.split('.')[0] + '.npy')]
 
     unqiue_images = set(img_paths)
     print('{} images, {} unique'.format(len(img_paths), len(unqiue_images)))
