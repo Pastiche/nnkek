@@ -1,5 +1,7 @@
+from datetime import datetime
+
 import torch
-from torch import cuda
+from torch import cuda, optim
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -18,6 +20,9 @@ class Autoencoder(nn.Module):
     """
     def __init__(self):
         super(Autoencoder, self).__init__()
+
+        self.input_size = 2048
+        self.hidden_size = 400
 
         # encoder
         self.enc1 = nn.Linear(in_features=2048, out_features=1024)
@@ -51,21 +56,35 @@ class Autoencoder(nn.Module):
         return x
 
     def fit(self,
-            data_loader,
-            optimizer,
+            trainloader,
+            valloader=None,
+            optimizer=None,
             criterion=nn.MSELoss(),
             num_epochs=100,
             device=None,
             debug=True):
+        """
+        :param trainloader:
+        :param optimizer: if None, than torch.optim.Adam is used as default
+        :param criterion:
+        :param num_epochs:
+        :param device:
+        :param debug:
+        :return:
+        """
+
+        optimizer = optimizer or optim.Adam(self.parameters())
 
         device = device or get_device()
         self.to(device)
 
         train_loss = []
+        val_loss = []
+
         for epoch in range(num_epochs):
             cumulative_loss = 0.0
 
-            for batch in data_loader:
+            for batch in trainloader:
                 batch = batch.to(device)
                 optimizer.zero_grad()
 
@@ -77,14 +96,37 @@ class Autoencoder(nn.Module):
 
                 cumulative_loss += loss.item()
 
-            epoch_loss = cumulative_loss / len(data_loader)
+            epoch_loss = cumulative_loss / len(trainloader)
             train_loss.append(epoch_loss)
 
             if debug:
                 print('Epoch {} of {}, train Loss: {:.3f}'.format(
-                    epoch + 1, num_epochs, epoch_loss))
+                    epoch + 1, num_epochs, epoch_loss), end=', ')
 
-        return train_loss
+            if valloader:
+                cumulative_val_loss = 0.0
+
+                for batch in valloader:
+                    batch = batch.to(device)
+
+                    outputs = self(batch)
+                    loss = criterion(outputs, batch)
+                    cumulative_val_loss += loss.item()
+
+                epoch_val_loss = cumulative_val_loss / len(valloader)
+                val_loss.append(epoch_val_loss)
+
+            if debug and valloader:
+                print('Val Loss: {:.3f}, timestamp: {}'.format(
+                        epoch_val_loss,
+                        datetime.now()
+                    ))
+
+        return train_loss, val_loss
+
+    def freeze(self):
+        for param in self.parameters():
+            param.requires_grad = False
 
     def save(self, path: str):
         torch.save(self.state_dict(), path)
