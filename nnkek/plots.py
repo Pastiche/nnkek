@@ -13,6 +13,7 @@ def img_grid(images, nrows=2, ncols=5, figsize=(6, 8), imgsize=(128, 128)):
 
         if isinstance(img, str):
             img = cv2.imread(img)
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
         if isinstance(img, np.ndarray):
             img = cv2.resize(img, imgsize)
