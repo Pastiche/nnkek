@@ -135,28 +135,33 @@ class BootsTrapper:
         self.comparator = comparator
 
     def run(self, amount=10000, verbose_amount=500):
-        bootstrap_results = []
+        bootstraps = []
 
         for i in range(amount):
-            # TODO: убрать байас из-за содержания самого айтема в интерсекции
             intersections = resample(self.comparator.intersections)
-            bootstrap_results.append(np.mean([len(x) for x in intersections]))
+            # since anchor itself is in the intersection of topks,
+            # subtract 1 to mitigate the bias
+            # TODO: убрать это, а вместо этого сделать в компараторе параметр
+            # include_anchor
+            bootstraps.append(np.mean([len(x) - 1 for x in intersections]))
 
             if verbose_amount is not None and (i + 1) % verbose_amount == 0:
                 print(f"Processed {i + 1} samples")
 
-        return bootstrap_results
+        return bootstraps
 
 
-def draw_distribution(distr, use_0_to_1_range=False, bins=100):
+def draw_distribution(distr, use_0_to_1_range=False, bins=100, title=None):
     plt.hist(distr, bins=bins, range=(0, 1) if use_0_to_1_range else None)
-    plt.title('Kek')
+    plt.title(title)
     plt.show()
 
 
 def print_confidence_interval(distr, percentage=95):
     percentile_left = (100 - percentage) / 2
     percentile_right = 100 - percentile_left
+
+    print(f"Confidence interval:")
     print(percentile_left, percentile_right)
 
     percentile_left_value = round(np.percentile(distr, percentile_left), 3)
@@ -172,12 +177,11 @@ def print_confidence_interval(distr, percentage=95):
 def distribution_report(distr,
                         percentage=95,
                         use_0_to_1_range=False,
-                        bins=100):
-    print(f"Confidence intervals:")
+                        bins=100,
+                        title=None):
+    draw_distribution(distr, use_0_to_1_range, bins=bins, title=title)
     print_confidence_interval(distr, percentage)
     print()
-
-    draw_distribution(distr, use_0_to_1_range, bins=bins)
 
 
 def display_bootstrap_report(boorstraper, percentage=95, use_0_to_1_range=False,
