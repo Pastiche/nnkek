@@ -1,5 +1,5 @@
 import torch
-from nnkek import plots
+from nnkek import plotters
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn import metrics
@@ -34,10 +34,10 @@ class Displayer:
         ax.patch.set_edgecolor('yellow')
 
     def plot_closest_img_compare_row(self, indices, intersection):
-        fig, ax = plots.img_grid(self.images[indices],
-                                 nrows=1,
-                                 ncols=len(indices),
-                                 figsize=(16, 4))
+        fig, ax = plotters.img_grid(self.images[indices],
+                                    nrows=1,
+                                    ncols=len(indices),
+                                    figsize=(16, 4))
 
         for i, axi in enumerate(ax):
             self.decorate_ax(axi)
