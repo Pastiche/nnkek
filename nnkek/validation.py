@@ -34,10 +34,10 @@ class Displayer:
         ax.patch.set_edgecolor('yellow')
 
     def plot_closest_img_compare_row(self, indices, intersection):
-        fig, ax = plotters.img_grid(self.images[indices],
-                                    nrows=1,
-                                    ncols=len(indices),
-                                    figsize=(16, 4))
+        fig, ax = plotters.im_grid(self.images[indices],
+                                   nrows=1,
+                                   ncols=len(indices),
+                                   figsize=(16, 4))
 
         for i, axi in enumerate(ax):
             self.decorate_ax(axi)

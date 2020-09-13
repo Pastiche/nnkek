@@ -2,29 +2,83 @@ from typing import Tuple, Callable, Iterable
 
 import tensorflow as tf
 import numpy as np
-from tqdm import tqdm
+import torch
 from typing import NewType
 from tools.util import file_utils
 import os
 
+# TODO: 1) переделать/расширить векторайзер под парадигму датасет-даталоадер
+#       Датасет тензорфлоу больше похож на даталоадер пайторча.
+#       Должно быть что-то вроде
+#           Dataset(source, load_callback), --> есть индексируемый, нужен итерабельный (или сделать специальный лоадер)
+#           Loader(Dataset, Sampler), --> уже есть
+#           Vectorizer(Model).transform()
+#
+#           for i in range(NUM_EPOCH):
+#               for batch in loader:
+#                   teach encoder(batch)
+#           Т.е. для обучения энкодера нужен даталоадер, выдающий уже 2048.
+# Причем подойдет итеративный ImageVectorizer (но надо встроить аугментации сюда)
+#
+#       А вот для дссм нужно натравливать получается там наш рандомизирующий лоадер
+#       на индексибельный тф датасет, потом отправлять батч в векторизатор, энкодер,
+#
+#
+#       2) заэкспандить для другой сетки на PyTorch
+
+# this is for vectorizer, not for dataset
 LoadImgCallback = NewType(
     'ImgLoadCallback',
     Callable[[tf.Tensor], Tuple[np.array, tf.Tensor]]
 )
 
 
+def load_img(im_path: tf.Tensor) -> tf.Tensor:
+    im = tf.io.read_file(im_path)
+    im = tf.image.decode_jpeg(im, channels=3)
+    im = tf.image.resize(im, (299, 299))
+    im = tf.cast(im, tf.float32)
+    im = tf.keras.applications.inception_v3.preprocess_input(im)
+    return im
+
+
+class TfIndexableDataset(torch.utils.data.Dataset):
+    def __init__(self,
+                 im_paths,
+                 load_img_callback=None,
+                 n_cpu: int = tf.data.experimental.AUTOTUNE):
+
+        self.n_cpu = n_cpu
+        self.im_paths = np.array(im_paths)
+        self.load_img = load_img_callback or load_img
+
+    def __len__(self):
+        return len(self.im_paths)
+
+    def __getitem__(self, index):
+        if isinstance(index, int):
+            return self.load_img(self.im_paths[index])
+        # workaround: one_shot (single batch) dataset and then iterate once
+        dataset = tf.data.Dataset.from_tensor_slices(self.im_paths[index])
+        dataset = dataset.map(
+            self.load_img, num_parallel_calls=self.n_cpu
+        ).batch(len(dataset))
+
+        return next(iter(dataset))
+
+
 class ImageVectorizer:
-    def __init__(self, model=None, load_img: LoadImgCallback = None):
+    def __init__(self, model=None, load_img_callback: LoadImgCallback = None):
         """
         :param model: callable model which takes a (supposedly 4D) array
         representing batch of images and returns a batch of embeddings.
-        :param load_img: a function for loading and preprocessing images
+        :param load_img_callback: a function for image loading and preprocessing
 
         Default is InceptionV3 model with its corresponding preprocessing
         """
 
         self.model = model or self.__get_default_model()
-        self.load_img = load_img or self.__load_img
+        self.load_img = load_img_callback or self.__load_img
 
     def __call__(self, img_batch: tf.Tensor):
         return self.model(img_batch)
@@ -36,12 +90,7 @@ class ImageVectorizer:
 
     @staticmethod
     def __load_img(img_path: tf.Tensor) -> Tuple[np.array, tf.Tensor]:
-        img = tf.io.read_file(img_path)
-        img = tf.image.decode_jpeg(img, channels=3)
-        img = tf.image.resize(img, (299, 299))
-        img = tf.cast(img, tf.float32)
-        img = tf.keras.applications.inception_v3.preprocess_input(img)
-        return img, img_path
+        return load_img(img_path), img_path
 
     def process_and_persist(
             self,
@@ -69,9 +118,9 @@ class ImageVectorizer:
         img_dataset = img_dataset.map(self.load_img, num_parallel_calls=n_cpu)
         img_dataset = img_dataset.batch(batch_size)
 
-        # extract image features and store as numpy
-        for img_batch, path_batch in tqdm(img_dataset):
-            yield self(img_batch), path_batch
+        # extract image features
+        for img_batch, path_batch in img_dataset:
+            yield self.model(img_batch), path_batch
 
     def persist_img_features_batch(self, batch_features, path_batch):
         for features, img_path in zip(batch_features, path_batch):

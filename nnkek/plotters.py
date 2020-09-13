@@ -8,7 +8,7 @@ import seaborn as sns
 from nnkek import imagers
 
 
-def img_grid(images, nrows=2, ncols=5, figsize=(6, 8), imgsize=(128, 128)):
+def im_grid(images, nrows=2, ncols=5, figsize=(6, 8), imgsize=(128, 128)):
 
     fig, ax = plt.subplots(nrows=nrows, ncols=ncols, figsize=figsize)
 

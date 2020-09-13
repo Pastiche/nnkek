@@ -4,14 +4,14 @@ import numpy as np
 
 class StratifiedConsequentBatchSampler(Sampler):
     # todo: expand for not only one sample from each strat, but distribution/weights, batches of batches
-    def __init__(self, sampler, batch_size=64, drop_last=True):
-        self.sampler = sampler
+    def __init__(self, strata_sampler, batch_size=64, drop_last=True):
+        self.strata_sampler = strata_sampler
         self.batch_size = batch_size
         self.drop_last = drop_last
 
     def __iter__(self):
         batch = []
-        for strata_index in self.sampler:
+        for strata_index in self.strata_sampler:
             strata = self.stratas[strata_index]
             sample_index = np.random.choice(strata)
             batch.append(sample_index)
@@ -23,9 +23,9 @@ class StratifiedConsequentBatchSampler(Sampler):
 
     def __len__(self):
         if self.drop_last:
-            return len(self.sampler) // self.batch_size
+            return len(self.strata_sampler) // self.batch_size
         else:
-            return (len(self.sampler) + self.batch_size - 1) // self.batch_size
+            return (len(self.strata_sampler) + self.batch_size - 1) // self.batch_size
 
 
 class OneVsBatchOfOthersSampler(Sampler):
