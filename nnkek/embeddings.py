@@ -7,26 +7,45 @@ from typing import NewType
 from tools.util import file_utils
 import os
 
-# TODO: 1) переделать/расширить векторайзер под парадигму датасет-даталоадер
-#       Датасет тензорфлоу больше похож на даталоадер пайторча.
-#       Должно быть что-то вроде
-#           Dataset(source, load_callback), --> есть индексируемый, нужен итерабельный (или сделать специальный лоадер)
-#           Loader(Dataset, Sampler), --> уже есть
-#           Vectorizer(Model).transform()
-#
-#           for i in range(NUM_EPOCH):
-#               for batch in loader:
-#                   teach encoder(batch)
-#           Т.е. для обучения энкодера нужен даталоадер, выдающий уже 2048.
-# Причем подойдет итеративный ImageVectorizer (но надо встроить аугментации сюда)
-#
-#       А вот для дссм нужно натравливать получается там наш рандомизирующий лоадер
-#       на индексибельный тф датасет, потом отправлять батч в векторизатор, энкодер,
-#
-#
-#       2) заэкспандить для другой сетки на PyTorch
+from torchvision.transforms import transforms
 
-# this is for vectorizer, not for dataset
+from nnkek.encoders import get_device
+
+
+class TorchImgVectorizer:
+    def __init__(self, model=None, preproc=None):
+        self.model = model or self.get_default_model()
+        self.preproc = preproc or self.get_default_transform()
+        self.model.to(get_device())
+
+    def __call__(self, batch: torch.Tensor):
+        return self.transform(batch)
+
+    @staticmethod
+    def get_default_model():
+        return torch.hub.load('pytorch/vision:v0.6.0',
+                              'inception_v3',
+                              pretrained=True)
+
+    @staticmethod
+    def get_default_transform():
+        mean = [0.485, 0.456, 0.406]
+        std = [0.229, 0.224, 0.225]
+
+        return transforms.Compose([
+            transforms.Resize(299),
+            transforms.CenterCrop(299),
+            transforms.ToTensor(),
+            transforms.Normalize(mean, std)
+        ])
+
+    def transform(self, batch: torch.Tensor) -> torch.Tensor:
+        with torch.no_grad():
+            batch = batch.to(get_device())
+            batch = self.preproc(batch)
+            return self.model(batch)
+
+
 LoadImgCallback = NewType(
     'ImgLoadCallback',
     Callable[[tf.Tensor], Tuple[np.array, tf.Tensor]]
@@ -70,6 +89,11 @@ class TfIndexableDataset(torch.utils.data.Dataset):
 class ImageVectorizer:
     def __init__(self, model=None, load_img_callback: LoadImgCallback = None):
         """
+        Можно считать этот векторайзер упраздненным. Во-первых, он создан
+        как бы для перелопачивания всех данных сразу, а не загрузкой батчами,
+        во-вторых, он на сраном тензорфлоу. Держу его лишь ради ноутбука, где
+        валидируется энкодер. Но можно просто сейчас его заменить на новый.
+
         :param model: callable model which takes a (supposedly 4D) array
         representing batch of images and returns a batch of embeddings.
         :param load_img_callback: a function for image loading and preprocessing

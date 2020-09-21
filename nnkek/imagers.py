@@ -7,7 +7,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 from tools.util.img.common_utils import size_yx
-from tools.util.img.io_utils import pil_download_image_by_url
+from tools.util.img.io_utils import pil_download_image_by_url, \
+    pil_download_image_by_aeid
 from tools.util.img.proc_utils import resize_image
 
 
@@ -81,7 +82,7 @@ class ImgLoader():
             return file_name if return_name else None
 
         # this call will only load the image into RAM
-        img = pil_download_image_by_url(image_aeid, verbose=verbose)
+        img = pil_download_image_by_aeid(image_aeid, verbose=verbose)
 
         if not img:
             # the error is logged in the called function

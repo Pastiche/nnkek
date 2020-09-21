@@ -2,7 +2,7 @@ from torch.utils.data import DataLoader
 
 from nnkek import dummies, embeddings
 from nnkek.augmentation import get_default_transform
-from nnkek.embeddings import TfIndexableDataset
+from nnkek.embeddings import TfIndexableDataset, TorchImgVectorizer
 from nnkek.encoders import Autoencoder, get_dummy_batch
 from nnkek.imagers import imshow
 from nnkek.datasets import ImDataset, ImAugDataset, ArrayDataset
@@ -90,6 +90,17 @@ def test_encoder_bootstrap():
     print_confidence_interval(evaluation, 100)
 
 
+def test_vectorizer_torch():
+    dataset = ImAugDataset(dummies.im_paths)
+    vectorizer = TorchImgVectorizer()
+    dataloader = DataLoader(dataset=dataset, batch_size=2, shuffle=True)
+
+    for batch in dataloader:
+        print(batch.shape)
+        processed = vectorizer.transform(batch)
+        print(processed)
+
+
 if __name__ == '__main__':
     # img = cv2.imread('data/Flicker8k/Flicker8k_Dataset/667626_18933d713e.jpg')
     # print(img.shape)
@@ -97,4 +108,5 @@ if __name__ == '__main__':
     # test_vectorizer()
     # test_tf_dataset()
     # test_safe_index()
-    test_array_dataset()
+    # test_array_dataset()
+    test_vectorizer_torch()

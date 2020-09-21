@@ -3,7 +3,7 @@ import albumentations as A
 
 def get_default_transform():
     return A.Compose([
-        A.Resize(300, 300),
+        A.Resize(300, 300, always_apply=True),  # Otherwise we can't use batches in dataloader (ask guys if it's okay)
         A.RandomRotate90(),
         A.Flip(),
         A.Transpose(),
@@ -31,4 +31,4 @@ def get_default_transform():
         ], p=0.3),
         A.HueSaturationValue(p=0.3),
         A.ToFloat(always_apply=True, p=1.0)  # do we need this?
-    ])
+    ], p=0.5)
