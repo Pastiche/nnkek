@@ -34,6 +34,8 @@ class Autoencoder(nn.Module):
         self.dec2 = nn.Linear(in_features=512, out_features=1024)
         self.dec3 = nn.Linear(in_features=1024, out_features=2048)
 
+        self.to(get_device())
+
     def encode(self, x):
         x = F.relu(self.enc1(x))
         x = F.relu(self.enc2(x))

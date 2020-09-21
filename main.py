@@ -1,7 +1,7 @@
 from torch.utils.data import DataLoader
 
 from nnkek import dummies, embeddings
-from nnkek.augmentation import get_default_transform
+from nnkek.augmentation import get_default_transforms
 from nnkek.embeddings import TfIndexableDataset, TorchImgVectorizer
 from nnkek.encoders import Autoencoder, get_dummy_batch
 from nnkek.imagers import imshow
@@ -13,9 +13,29 @@ from nnkek.validation import TopKComparator, BootsTrapper, \
 import matplotlib.pyplot as plt
 
 
+def test_load_aug_vect_enc():
+    transforms = get_default_transforms()
+
+    vectorizer = TorchImgVectorizer()
+
+    dataset = ImAugDataset(dummies.im_paths, transforms)
+
+    print('multiple indexing:')
+    pics = dataset[[1, 3]]
+    print(pics.shape)
+
+    print('single indexing:')
+    pic = dataset[1]
+    print(pic.shape)
+
+    print('batched, shuffled dataloader:')
+    dataloader = DataLoader(dataset=dataset, batch_size=2, shuffle=True)
+    for batch in dataloader:
+        print(batch.shape)
+
 def test_aug():
     # запомните твари, берете батч и каждую картинку аугментите с 50% вероятностью
-    transform = get_default_transform()
+    transform = get_default_transforms()
 
     dataset = ImAugDataset(dummies.im_paths, transform)
 
@@ -99,6 +119,16 @@ def test_vectorizer_torch():
         print(batch.shape)
         processed = vectorizer.transform(batch)
         print(processed)
+
+
+def test_oss_dataset():
+    pass
+    # dataset = OSSDataset(endpoint, bucket, index_file)
+    # data_loader = torch.utils.data.DataLoader(
+    #     dataset,
+    #     batch_size=batch_size,
+    #     num_workers=num_loaders,
+    #     pin_memory=True)
 
 
 if __name__ == '__main__':

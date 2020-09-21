@@ -1,15 +1,34 @@
+import os
+from typing import NewType
 from typing import Tuple, Callable, Iterable
 
-import tensorflow as tf
 import numpy as np
+import tensorflow as tf
 import torch
-from typing import NewType
+from albumentations import BasicTransform
 from tools.util import file_utils
-import os
-
 from torchvision.transforms import transforms
 
 from nnkek.encoders import get_device
+
+
+class TorchImgTransfomr(BasicTransform):
+    def get_params_dependent_on_targets(self, params):
+        pass
+
+    def __init__(self):
+        super().__init__()
+        self.vectorizer = TorchImgVectorizer()
+
+    def apply(self, img, **params):
+        return self.vectorizer(img)
+
+    def get_params(self):
+        return {}
+
+    @property
+    def targets(self):
+        return None
 
 
 class TorchImgVectorizer:

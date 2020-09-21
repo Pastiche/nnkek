@@ -17,7 +17,9 @@ def preprocess(df):
 
 
 def train_test_val_split(df, frac, random_state=42):
-    """No stratification etc, just randomly splits into three sets"""
+    """No stratification etc., just randomly splits into three sets with
+    proportions: 1 - 2*frac, frac, frac
+    """
 
     _, test_set = train_test_split(df, test_size=frac,
                                    random_state=random_state)
