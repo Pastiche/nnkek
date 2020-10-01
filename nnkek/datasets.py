@@ -13,6 +13,7 @@ from nnkek.augmentation import get_default_transforms
 
 class AbstractMapper(Dataset):
     """This maps entities, e.g. item_id to one of it's real photos or titles"""
+
     # do we really need this? We might build it later if needed
     # might be useful when we have multiple images of the same item
     pass
@@ -29,16 +30,16 @@ class SafeIndexer(Dataset):
         if isinstance(index, int):
             return self.get_one(index)
         elif isinstance(index, Tuple):
-            raise IndexError('tuple indexing is not allowed')
+            raise IndexError("tuple indexing is not allowed")
         elif isinstance(index, Iterable):
             return np.array([self.get_one(i) for i in index])
         else:
-            raise IndexError(f'{type(index)} is not supported index key type')
+            raise IndexError(f"{type(index)} is not supported index key type")
 
 
 class ImDataset(SafeIndexer):
-    """Returns an image
-    """
+    """Returns an image"""
+
     def __init__(self, im_paths: np.ndarray):
         self.im_paths = im_paths
 
@@ -53,8 +54,8 @@ class ImDataset(SafeIndexer):
 
 
 class ImAugDataset(ImDataset, SafeIndexer):
-    """Returns an augmented image
-    """
+    """Returns an augmented image"""
+
     def __init__(self, im_paths, transforms=None, p=0.5):
         super(ImAugDataset, self).__init__(im_paths)
         self.aug = A.Compose(transforms or get_default_transforms(), p=p)
@@ -64,7 +65,7 @@ class ImAugDataset(ImDataset, SafeIndexer):
 
     def get_one(self, i) -> np.ndarray:
         im = super(ImAugDataset, self).get_one(i)
-        return self.aug(image=im)['image']  # not flexible, should be changed
+        return self.aug(image=im)["image"]  # not flexible, should be changed
 
 
 class ArrayDataset(SafeIndexer):

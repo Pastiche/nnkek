@@ -20,20 +20,17 @@ def im_grid(images, nrows=2, ncols=5, figsize=(6, 8), imgsize=(128, 128)):
 
 
 def counterplot_with_caps(data):
-    sns.set(rc={'figure.figsize': (14, 7)})
+    sns.set(rc={"figure.figsize": (14, 7)})
     counter = Counter(data)
     c = sns.countplot(x=data)
 
     c.axes.set_title(f"Kek", fontsize=16)
-    c.set_xlabel('Median: {}, Mean: {:2.1f}'.format(
-        statistics.median(data),
-        statistics.mean(data)
-    ), fontsize=16)
+    c.set_xlabel("Median: {}, Mean: {:2.1f}".format(statistics.median(data), statistics.mean(data)), fontsize=16)
     c.set_ylabel("", fontsize=16)
     c.tick_params(labelsize=16)
 
     for i, v in counter.items():
-        ratio = '{:2.1f}%'.format(v / np.sum(list(counter.values())) * 100)
-        c.text(i, v, ratio, color='gray', fontsize=14, ha="center")
+        ratio = "{:2.1f}%".format(v / np.sum(list(counter.values())) * 100)
+        c.text(i, v, ratio, color="gray", fontsize=14, ha="center")
 
     plt.show()

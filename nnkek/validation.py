@@ -17,27 +17,24 @@ class Displayer:
         ax.set_xticks([], minor=False)
         ax.set_yticks([], minor=True)
         ax.set_yticks([], minor=False)
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.spines['bottom'].set_visible(False)
-        ax.spines['left'].set_visible(False)
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.spines["bottom"].set_visible(False)
+        ax.spines["left"].set_visible(False)
 
     @staticmethod
     def decorate_anchor(ax):
-        ax.set_title('Anchor', fontsize=14, color='red')
-        ax.patch.set_linewidth('10')
-        ax.patch.set_edgecolor('red')
+        ax.set_title("Anchor", fontsize=14, color="red")
+        ax.patch.set_linewidth("10")
+        ax.patch.set_edgecolor("red")
 
     @staticmethod
     def decorate_match(ax):
-        ax.patch.set_linewidth('10')
-        ax.patch.set_edgecolor('yellow')
+        ax.patch.set_linewidth("10")
+        ax.patch.set_edgecolor("yellow")
 
     def plot_closest_img_compare_row(self, indices, intersection):
-        fig, ax = plotters.im_grid(self.images[indices],
-                                   nrows=1,
-                                   ncols=len(indices),
-                                   figsize=(16, 4))
+        fig, ax = plotters.im_grid(self.images[indices], nrows=1, ncols=len(indices), figsize=(16, 4))
 
         for i, axi in enumerate(ax):
             self.decorate_ax(axi)
@@ -46,7 +43,7 @@ class Displayer:
             elif indices[i] in intersection:
                 self.decorate_match(axi)
             else:
-                axi.axis('off')
+                axi.axis("off")
 
         fig.tight_layout()
 
@@ -83,15 +80,10 @@ class TopK:
 
 
 class TopKComparator:
-    def __init__(self,
-                 raw: torch.Tensor,
-                 encoded: torch.Tensor,
-                 k=5,
-                 largest=False):
+    def __init__(self, raw: torch.Tensor, encoded: torch.Tensor, k=5, largest=False):
         self.raw = TopK(raw, k, largest)
         self.encoded = TopK(encoded, k, largest)
-        self.intersections = np.array([np.intersect1d(r, e)
-                                       for r, e in zip(self.raw, self.encoded)])
+        self.intersections = np.array([np.intersect1d(r, e) for r, e in zip(self.raw, self.encoded)])
 
     def __getitem__(self, i):
         return self.raw[i], self.encoded[i], self.intersections[i]
@@ -111,20 +103,21 @@ class TopKComparator:
         return self.shape[0]
 
 
-def bootstrap_result(true_labels, predicted_labels, amount=10000,
-                     verbose_amount=500, label_names=None):
+def bootstrap_result(true_labels, predicted_labels, amount=10000, verbose_amount=500, label_names=None):
     bootstrap_results = []
     for i in range(amount):
         bootstrapped_true_labels, bootstrapped_predicted_labels = zip(
             *resample(list(zip(true_labels, predicted_labels)))
         )
-        bootstrap_results.append(metrics.classification_report(
-            list(bootstrapped_true_labels),
-            list(bootstrapped_predicted_labels),
-            output_dict=True,
-            target_names=label_names,
-            zero_division=0.0
-        ))
+        bootstrap_results.append(
+            metrics.classification_report(
+                list(bootstrapped_true_labels),
+                list(bootstrapped_predicted_labels),
+                output_dict=True,
+                target_names=label_names,
+                zero_division=0.0,
+            )
+        )
         if verbose_amount is not None and (i + 1) % verbose_amount == 0:
             print(f"Processed {i + 1} samples")
     return bootstrap_results
@@ -168,27 +161,24 @@ def print_confidence_interval(distr, percentage=95):
     percentile_right_value = round(np.percentile(distr, percentile_right), 3)
     percentile_interval = percentile_right_value - percentile_left_value
 
-    print(f'interval length: {round(percentile_interval, 3)}')
+    print(f"interval length: {round(percentile_interval, 3)}")
 
-    print('[{}, {}]'.format(round(np.percentile(distr, percentile_left), 3),
-                            round(np.percentile(distr, percentile_right), 3)))
+    print(
+        "[{}, {}]".format(
+            round(np.percentile(distr, percentile_left), 3), round(np.percentile(distr, percentile_right), 3)
+        )
+    )
 
 
-def distribution_report(distr,
-                        percentage=95,
-                        use_0_to_1_range=False,
-                        bins=100,
-                        title=None):
+def distribution_report(distr, percentage=95, use_0_to_1_range=False, bins=100, title=None):
     draw_distribution(distr, use_0_to_1_range, bins=bins, title=title)
     print_confidence_interval(distr, percentage)
     print()
 
 
-def display_bootstrap_report(boorstraper, percentage=95, use_0_to_1_range=False,
-                             amount=10000, verbose_amount=500, bins=100):
+def display_bootstrap_report(
+    boorstraper, percentage=95, use_0_to_1_range=False, amount=10000, verbose_amount=500, bins=100
+):
     bootstrap = boorstraper.run(amount=amount, verbose_amount=verbose_amount)
 
-    distribution_report(bootstrap,
-                        percentage=percentage,
-                        use_0_to_1_range=use_0_to_1_range,
-                        bins=bins)
+    distribution_report(bootstrap, percentage=percentage, use_0_to_1_range=use_0_to_1_range, bins=bins)

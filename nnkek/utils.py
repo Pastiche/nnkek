@@ -7,8 +7,7 @@ from typing import Dict, Callable, Any, Sequence, Mapping
 from tqdm import tqdm
 
 
-def get_by_path(container: Mapping[str, Any],
-                path: str, default: Any = None) -> Any:
+def get_by_path(container: Mapping[str, Any], path: str, default: Any = None) -> Any:
     """
     Retrieves a value from the container using a specified path.
     If the path goes through a list, the first element is taken.
@@ -17,6 +16,7 @@ def get_by_path(container: Mapping[str, Any],
     :param default: default value to return if path is invalid or no value found
     :return a value found in the container using path or default value
     """
+
     def func(container: Dict[str, Any], key):
         if not container:
             return None
@@ -32,7 +32,7 @@ def get_by_path(container: Mapping[str, Any],
 
         return None
 
-    value = reduce(func, path.split('.'), container)
+    value = reduce(func, path.split("."), container)
     return value if value is not None else default
 
 
@@ -51,8 +51,7 @@ def get_list_column(dictionary, list_path, column):
     return [get_by_path(element, column) for element in collection]
 
 
-def get_list_element_field(container: Mapping[str, Any], list_path: str,
-                           field: str, element_index: int) -> Any:
+def get_list_element_field(container: Mapping[str, Any], list_path: str, field: str, element_index: int) -> Any:
     """
     Returns a value of the selected list element field. The list is acquired
     from the container using a specified path.
@@ -73,8 +72,7 @@ def get_list_element_field(container: Mapping[str, Any], list_path: str,
     return list_column[element_index]
 
 
-async def map_io(sequence: Sequence[Any], worker: Callable,
-                 **worker_kwargs) -> Sequence[Any]:
+async def map_io(sequence: Sequence[Any], worker: Callable, **worker_kwargs) -> Sequence[Any]:
     """
     Асинхронно (IO) маппит последовательность.
     :param sequence: последовательность для обработки
@@ -88,8 +86,7 @@ async def map_io(sequence: Sequence[Any], worker: Callable,
     return await asyncio.gather(*tasks, return_exceptions=True)
 
 
-async def map_io_iter(sequence: Sequence[Any], worker: Callable, batch_size=50,
-                      **worker_kwargs) -> Sequence[Any]:
+async def map_io_iter(sequence: Sequence[Any], worker: Callable, batch_size=50, **worker_kwargs) -> Sequence[Any]:
     """
     Асинхронно (IO) итеративно (батчами) маппит последовательность
     :param sequence: последовательность для обработки
@@ -103,7 +100,7 @@ async def map_io_iter(sequence: Sequence[Any], worker: Callable, batch_size=50,
     res = []
     with tqdm() as pbar:
         for i in range(0, len(sequence), batch_size):
-            batch = sequence[i:i + batch_size]
+            batch = sequence[i : i + batch_size]
 
             responses_batch = await map_io(batch, worker, **worker_kwargs)
             res.extend(responses_batch)
@@ -113,8 +110,7 @@ async def map_io_iter(sequence: Sequence[Any], worker: Callable, batch_size=50,
     return res
 
 
-def parallel_processor(sequence: Sequence[Any], worker: Callable, n_jobs=-1,
-                       **worker_kwargs) -> Sequence[Any]:
+def parallel_processor(sequence: Sequence[Any], worker: Callable, n_jobs=-1, **worker_kwargs) -> Sequence[Any]:
     """
     Параллельный преобразователь последовательности.
 
@@ -128,7 +124,7 @@ def parallel_processor(sequence: Sequence[Any], worker: Callable, n_jobs=-1,
         n_jobs = mp.cpu_count() - 1
 
     if not isinstance(n_jobs, int) or n_jobs < 1:
-        raise ValueError(f'Got invalid n_jobs argument: {n_jobs}')
+        raise ValueError(f"Got invalid n_jobs argument: {n_jobs}")
 
     if n_jobs == 1:
         return worker(sequence, **worker_kwargs)

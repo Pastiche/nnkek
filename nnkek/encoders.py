@@ -7,7 +7,7 @@ import torch.nn.functional as F
 
 
 def get_device():
-    return 'cuda:0' if cuda.is_available() else 'cpu'
+    return "cuda:0" if cuda.is_available() else "cpu"
 
 
 def get_dummy_batch(batch_size=16):
@@ -16,8 +16,9 @@ def get_dummy_batch(batch_size=16):
 
 class Autoencoder(nn.Module):
     """Autoencoder for compressing image features obtained from feeding forward
-       an image to InceptionV3. Bottleneck layer space is of 400 dimensions
+    an image to InceptionV3. Bottleneck layer space is of 400 dimensions
     """
+
     def __init__(self):
         super(Autoencoder, self).__init__()
 
@@ -57,14 +58,16 @@ class Autoencoder(nn.Module):
         x = self.decode(x)
         return x
 
-    def fit(self,
-            trainloader,
-            valloader=None,
-            optimizer=None,
-            criterion=nn.MSELoss(),
-            num_epochs=100,
-            device=None,
-            debug=True):
+    def fit(
+        self,
+        trainloader,
+        valloader=None,
+        optimizer=None,
+        criterion=nn.MSELoss(),
+        num_epochs=100,
+        device=None,
+        debug=True,
+    ):
         """
         :param trainloader:
         :param optimizer: if None, than torch.optim.Adam is used as default
@@ -102,8 +105,7 @@ class Autoencoder(nn.Module):
             train_loss.append(epoch_loss)
 
             if debug:
-                print('Epoch {} of {}, train Loss: {:.3f}'.format(
-                    epoch + 1, num_epochs, epoch_loss), end=', ')
+                print("Epoch {} of {}, train Loss: {:.3f}".format(epoch + 1, num_epochs, epoch_loss), end=", ")
 
             if valloader:
                 cumulative_val_loss = 0.0
@@ -119,10 +121,7 @@ class Autoencoder(nn.Module):
                 val_loss.append(epoch_val_loss)
 
             if debug and valloader:
-                print('Val Loss: {:.3f}, timestamp: {}'.format(
-                        epoch_val_loss,
-                        datetime.now()
-                    ))
+                print("Val Loss: {:.3f}, timestamp: {}".format(epoch_val_loss, datetime.now()))
 
         return train_loss, val_loss
 

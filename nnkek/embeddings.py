@@ -42,21 +42,21 @@ class TorchImgVectorizer:
 
     @staticmethod
     def get_default_model():
-        return torch.hub.load('pytorch/vision:v0.6.0',
-                              'inception_v3',
-                              pretrained=True)
+        return torch.hub.load("pytorch/vision:v0.6.0", "inception_v3", pretrained=True)
 
     @staticmethod
     def get_default_transform():
         mean = [0.485, 0.456, 0.406]
         std = [0.229, 0.224, 0.225]
 
-        return transforms.Compose([
-            transforms.Resize(299),
-            transforms.CenterCrop(299),
-            transforms.ToTensor(),
-            transforms.Normalize(mean, std)
-        ])
+        return transforms.Compose(
+            [
+                transforms.Resize(299),
+                transforms.CenterCrop(299),
+                transforms.ToTensor(),
+                transforms.Normalize(mean, std),
+            ]
+        )
 
     def transform(self, batch: torch.Tensor) -> torch.Tensor:
         with torch.no_grad():
@@ -65,10 +65,7 @@ class TorchImgVectorizer:
             return self.model(batch)
 
 
-LoadImgCallback = NewType(
-    'ImgLoadCallback',
-    Callable[[tf.Tensor], Tuple[np.array, tf.Tensor]]
-)
+LoadImgCallback = NewType("ImgLoadCallback", Callable[[tf.Tensor], Tuple[np.array, tf.Tensor]])
 
 
 def load_img(im_path: tf.Tensor) -> tf.Tensor:
@@ -81,10 +78,7 @@ def load_img(im_path: tf.Tensor) -> tf.Tensor:
 
 
 class TfIndexableDataset(torch.utils.data.Dataset):
-    def __init__(self,
-                 im_paths,
-                 load_img_callback=None,
-                 n_cpu: int = tf.data.experimental.AUTOTUNE):
+    def __init__(self, im_paths, load_img_callback=None, n_cpu: int = tf.data.experimental.AUTOTUNE):
 
         self.n_cpu = n_cpu
         self.im_paths = np.array(im_paths)
@@ -98,9 +92,7 @@ class TfIndexableDataset(torch.utils.data.Dataset):
             return self.load_img(self.im_paths[index])
         # workaround: one_shot (single batch) dataset and then iterate once
         dataset = tf.data.Dataset.from_tensor_slices(self.im_paths[index])
-        dataset = dataset.map(
-            self.load_img, num_parallel_calls=self.n_cpu
-        ).batch(len(dataset))
+        dataset = dataset.map(self.load_img, num_parallel_calls=self.n_cpu).batch(len(dataset))
 
         return next(iter(dataset))
 
@@ -135,25 +127,13 @@ class ImageVectorizer:
     def __load_img(img_path: tf.Tensor) -> Tuple[np.array, tf.Tensor]:
         return load_img(img_path), img_path
 
-    def process_and_persist(
-            self,
-            img_paths: Iterable[str],
-            n_cpu: int = tf.data.experimental.AUTOTUNE,
-            batch_size=16
-    ):
-        for features_batch, path_batch in self.process(
-                img_paths, n_cpu, batch_size
-        ):
+    def process_and_persist(self, img_paths: Iterable[str], n_cpu: int = tf.data.experimental.AUTOTUNE, batch_size=16):
+        for features_batch, path_batch in self.process(img_paths, n_cpu, batch_size):
             self.persist_img_features_batch(features_batch, path_batch)
 
-    def process(
-            self,
-            img_paths: Iterable[str],
-            n_cpu: int = tf.data.experimental.AUTOTUNE,
-            batch_size=16
-    ):
+    def process(self, img_paths: Iterable[str], n_cpu: int = tf.data.experimental.AUTOTUNE, batch_size=16):
         """Returns a generator, will yields tuple of
-           (image features batch, corresponding image paths batch)
+        (image features batch, corresponding image paths batch)
         """
 
         # Construct a lazy loader
@@ -172,7 +152,7 @@ class ImageVectorizer:
     @staticmethod
     def persist_img_features(img_features, img_path):
         # decode path and remove extension
-        img_path = img_path.numpy().decode("utf-8").split('.')[0]
+        img_path = img_path.numpy().decode("utf-8").split(".")[0]
         # np.save adds '.npy' automatically
         np.save(img_path, img_features.numpy())
 
@@ -183,7 +163,7 @@ def from_dir(vectorizer, folder, rewrite=False):
     :img_paths: iterable of image paths with extentions
     """
 
-    img_paths = file_utils.path_get_file_list(folder, ['img'])[0]
+    img_paths = file_utils.path_get_file_list(folder, ["img"])[0]
     from_paths(vectorizer, img_paths, rewrite)
 
 
@@ -194,11 +174,10 @@ def from_paths(vectorizer, img_paths, rewrite=False):
     """
 
     if not rewrite:
-        img_paths = [x for x in img_paths
-                     if not os.path.exists(x.split('.')[0] + '.npy')]
+        img_paths = [x for x in img_paths if not os.path.exists(x.split(".")[0] + ".npy")]
 
     unqiue_images = set(img_paths)
-    print('{} unique images to process..'.format(len(unqiue_images)))
+    print("{} unique images to process..".format(len(unqiue_images)))
 
     if unqiue_images:
         vectorizer.process_and_persist(list(unqiue_images))
