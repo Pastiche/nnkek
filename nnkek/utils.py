@@ -2,11 +2,13 @@ import asyncio
 import multiprocessing as mp
 from functools import partial
 from functools import reduce
+from tools.util import file_utils as futils
 from typing import Dict, Callable, Any, Sequence, Mapping
+import numpy as np
 
 from tqdm import tqdm
 
-
+# container traversing
 def get_by_path(container: Mapping[str, Any], path: str, default: Any = None) -> Any:
     """
     Retrieves a value from the container using a specified path.
@@ -72,6 +74,7 @@ def get_list_element_field(container: Mapping[str, Any], list_path: str, field: 
     return list_column[element_index]
 
 
+# parallel mapping
 async def map_io(sequence: Sequence[Any], worker: Callable, **worker_kwargs) -> Sequence[Any]:
     """
     Асинхронно (IO) маппит последовательность.
@@ -133,3 +136,10 @@ def parallel_processor(sequence: Sequence[Any], worker: Callable, n_jobs=-1, **w
         results = pool.map(partial(worker, **worker_kwargs), sequence)
 
     return results
+
+
+# paths manipulations
+def map_paths(image_folder: str, filenames: Sequence[str]) -> np.array:
+    """Given files root folder and their unique names returns corresponding paths from the given root"""
+    filenames2paths = {x.split("/")[-1]: x for x in futils.path_get_file_list(image_folder, ["image"])}
+    return np.array([filenames2paths[x] for x in filenames])
