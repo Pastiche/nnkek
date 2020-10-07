@@ -9,7 +9,7 @@ setup(
         "tqdm",
         "numpy",
         "pillow",
-        "opencv",
+        "opencv-python",
         "matplotlib",
         "tools",
         "albumentations",
