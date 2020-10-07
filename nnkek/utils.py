@@ -139,12 +139,13 @@ def parallel_processor(sequence: Sequence[Any], worker: Callable, n_jobs=-1, **w
 
 
 # paths manipulations
-def map_img_paths(image_folder: str, filenames: Sequence[str]) -> np.array:
+def map_img_paths(image_folder: str, img_names: Sequence[str]) -> dict:
     """Given files root folder and their unique names returns mapping to corresponding paths from the given root"""
-    return {x.split("/")[-1]: x for x in futils.path_get_file_list(image_folder, ["image"])}
+    all_paths = {x.split("/")[-1]: x for x in futils.path_get_file_list(image_folder, ["image"])}
+    return {x: all_paths.get(x) for x in img_names}
 
 
-def get_img_paths(image_folder: str, filenames: Sequence[str]) -> np.array:
+def get_img_paths(image_folder: str, img_names: Sequence[str]) -> np.array:
     """Given files root folder and their unique names returns corresponding paths from the given root"""
-    filenames2paths = map_img_paths(image_folder, filenames)
-    return np.array([filenames2paths[x] for x in filenames])
+    img_names2paths = map_img_paths(image_folder, img_names)
+    return np.array([x for x in img_names2paths.values()])
