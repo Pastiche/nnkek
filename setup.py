@@ -18,7 +18,7 @@ setup(
         "seaborn",
         "tensorflow",
         "torchvision",
-        "scikit",
+        "scikit-learn",
         "pandas",
         "setuptools",
         "requests",
