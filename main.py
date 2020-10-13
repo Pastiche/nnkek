@@ -7,8 +7,7 @@ from nnkek.encoders import Autoencoder, get_dummy_batch
 from nnkek.imagers import imshow
 from nnkek.datasets import ImDataset, ImAugDataset, ArrayDataset
 from nnkek.plotters import im_grid
-from nnkek.validation import TopKComparator, BootsTrapper, \
-    print_confidence_interval
+from nnkek.validation import TopKComparator, BootsTrapper, print_confidence_interval
 
 import matplotlib.pyplot as plt
 
@@ -20,18 +19,19 @@ def test_load_aug_vect_enc():
 
     dataset = ImAugDataset(dummies.im_paths, transforms)
 
-    print('multiple indexing:')
+    print("multiple indexing:")
     pics = dataset[[1, 3]]
     print(pics.shape)
 
-    print('single indexing:')
+    print("single indexing:")
     pic = dataset[1]
     print(pic.shape)
 
-    print('batched, shuffled dataloader:')
+    print("batched, shuffled dataloader:")
     dataloader = DataLoader(dataset=dataset, batch_size=2, shuffle=True)
     for batch in dataloader:
         print(batch.shape)
+
 
 def test_aug():
     # запомните твари, берете батч и каждую картинку аугментите с 50% вероятностью
@@ -39,15 +39,15 @@ def test_aug():
 
     dataset = ImAugDataset(dummies.im_paths, transform)
 
-    print('multiple indexing:')
+    print("multiple indexing:")
     pics = dataset[[1, 3]]
     print(pics.shape)
 
-    print('single indexing:')
+    print("single indexing:")
     pic = dataset[1]
     print(pic.shape)
 
-    print('batched, shuffled dataloader:')
+    print("batched, shuffled dataloader:")
     dataloader = DataLoader(dataset=dataset, batch_size=2, shuffle=True)
     for batch in dataloader:
         print(batch.shape)
@@ -56,15 +56,15 @@ def test_aug():
 def test_array_dataset():
     dataset = ArrayDataset(dummies.arr_paths)
 
-    print('multiple indexing:')
+    print("multiple indexing:")
     arrays = dataset[[1, 3]]
     print(arrays)
 
-    print('single indexing:')
+    print("single indexing:")
     array = dataset[1]
     print(array)
 
-    print('batched, shuffled dataloader:')
+    print("batched, shuffled dataloader:")
     dataloader = DataLoader(dataset=dataset, batch_size=2, shuffle=True)
     for batch in dataloader:
         print(batch)
@@ -131,12 +131,12 @@ def test_oss_dataset():
     #     pin_memory=True)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # img = cv2.imread('data/Flicker8k/Flicker8k_Dataset/667626_18933d713e.jpg')
     # print(img.shape)
     # test_aug()
     # test_vectorizer()
     # test_tf_dataset()
-    # test_safe_index()
+    test_safe_index()
     # test_array_dataset()
-    test_vectorizer_torch()
+    # test_vectorizer_torch()

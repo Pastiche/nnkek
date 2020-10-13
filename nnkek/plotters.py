@@ -10,10 +10,12 @@ from nnkek import imagers
 
 def im_grid(images, nrows=2, ncols=5, figsize=(6, 8), imgsize=(128, 128)):
     # это негибко. Лучше, чтобы кол-во картинок было неожиданным
+    assert len(images) == nrows * ncols
 
     fig, ax = plt.subplots(nrows=nrows, ncols=ncols, figsize=figsize)
 
-    ax = ax.flat if nrows > 1 else ax
+    if nrows * ncols == 1:
+        ax = [ax]
 
     for i, axi in enumerate(ax):
         img = images[i]
