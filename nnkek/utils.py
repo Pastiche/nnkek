@@ -8,6 +8,7 @@ import numpy as np
 
 from tqdm import tqdm
 
+
 # container traversing
 def get_by_path(container: Mapping[str, Any], path: str, default: Any = None) -> Any:
     """
@@ -113,9 +114,12 @@ async def map_io_iter(sequence: Sequence[Any], worker: Callable, batch_size=50, 
     return res
 
 
-def batch_parallel(sequence: Sequence[Any], worker: Callable, batch_size=50, **worker_kwargs) -> Sequence[Any]:
+def batch_parallel(
+    sequence: Sequence[Any], worker: Callable, n_jobs=-1, batch_size=50, **worker_kwargs
+) -> Sequence[Any]:
     """
     Мультипоточно итеративно (батчами) маппит последовательность
+    :param n_jobs: число используемых процессов (по-умолчанию, все доступные)
     :param sequence: последовательность для обработки
     :param worker: функция-обработчик, должна принимать первым параметром
     элемент для обработки
@@ -129,7 +133,7 @@ def batch_parallel(sequence: Sequence[Any], worker: Callable, batch_size=50, **w
         for i in range(0, len(sequence), batch_size):
             batch = sequence[i : i + batch_size]
 
-            responses_batch = parallel_processor(batch, worker, **worker_kwargs)
+            responses_batch = parallel_processor(batch, worker, n_jobs, **worker_kwargs)
             res.extend(responses_batch)
 
             pbar.update()
