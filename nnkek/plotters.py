@@ -17,7 +17,7 @@ def im_grid(images, nrows=2, ncols=5, figsize=(6, 8), imgsize=(128, 128)):
     if nrows * ncols == 1:
         ax = [ax]
 
-    for i, axi in enumerate(ax):
+    for i, axi in enumerate(ax.flat):
         img = images[i]
         imagers.imshow(img, axi, imgsize)
 
