@@ -15,7 +15,7 @@ def im_grid(images, nrows=2, ncols=5, figsize=(6, 8), imgsize=(128, 128)):
     fig, ax = plt.subplots(nrows=nrows, ncols=ncols, figsize=figsize)
 
     if nrows * ncols == 1:
-        ax = [ax]
+        ax = np.array([ax])
 
     for i, axi in enumerate(ax.flat):
         img = images[i]
