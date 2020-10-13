@@ -113,6 +113,30 @@ async def map_io_iter(sequence: Sequence[Any], worker: Callable, batch_size=50, 
     return res
 
 
+async def batch_parallel(sequence: Sequence[Any], worker: Callable, batch_size=50, **worker_kwargs) -> Sequence[Any]:
+    """
+    Мультипоточно итеративно (батчами) маппит последовательность
+    :param sequence: последовательность для обработки
+    :param worker: функция-обработчик, должна принимать первым параметром
+    элемент для обработки
+    :param batch_size: размер батча единовременно вызываемых операций
+    :param worker_kwargs: аргументы вызова обработчика
+    :return: преобразованная последовательность. Каждый элемент - результат
+    обработки или возникшее исключение
+    """
+    res = []
+    with tqdm() as pbar:
+        for i in range(0, len(sequence), batch_size):
+            batch = sequence[i : i + batch_size]
+
+            responses_batch = parallel_processor(batch, worker, **worker_kwargs)
+            res.extend(responses_batch)
+
+            pbar.update()
+
+    return res
+
+
 def parallel_processor(sequence: Sequence[Any], worker: Callable, n_jobs=-1, **worker_kwargs) -> Sequence[Any]:
     """
     Параллельный преобразователь последовательности.
