@@ -113,7 +113,7 @@ async def map_io_iter(sequence: Sequence[Any], worker: Callable, batch_size=50, 
     return res
 
 
-async def batch_parallel(sequence: Sequence[Any], worker: Callable, batch_size=50, **worker_kwargs) -> Sequence[Any]:
+def batch_parallel(sequence: Sequence[Any], worker: Callable, batch_size=50, **worker_kwargs) -> Sequence[Any]:
     """
     Мультипоточно итеративно (батчами) маппит последовательность
     :param sequence: последовательность для обработки
