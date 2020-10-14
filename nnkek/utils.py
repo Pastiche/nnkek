@@ -171,7 +171,11 @@ def parallel_processor(sequence: Sequence[Any], worker: Callable, n_jobs=-1, **w
 def map_img_paths(image_folder: str, img_names: Sequence[str] = None) -> dict:
     """Given files root folder and their unique names returns mapping to corresponding paths from the given root"""
     all_paths = {osp.basename(x): x for x in futils.path_get_file_list(image_folder, ["image"])}
-    return {x: all_paths.get(x) for x in img_names} if len(img_names) != 0 else all_paths
+
+    if len(img_names) == 0:
+        return all_paths
+
+    return {x: all_paths[x] if x in all_paths else None for x in img_names}
 
 
 def get_img_paths(image_folder: str, img_names: Sequence[str] = None) -> np.array:
