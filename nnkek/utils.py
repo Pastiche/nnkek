@@ -5,6 +5,7 @@ from functools import reduce
 from tools.util import file_utils as futils
 from typing import Dict, Callable, Any, Sequence, Mapping
 import numpy as np
+import os.path as osp
 
 from tqdm import tqdm
 
@@ -167,13 +168,13 @@ def parallel_processor(sequence: Sequence[Any], worker: Callable, n_jobs=-1, **w
 
 
 # paths manipulations
-def map_img_paths(image_folder: str, img_names: Sequence[str]) -> dict:
+def map_img_paths(image_folder: str, img_names: Sequence[str] = None) -> dict:
     """Given files root folder and their unique names returns mapping to corresponding paths from the given root"""
-    all_paths = {x.split("/")[-1]: x for x in futils.path_get_file_list(image_folder, ["image"])}
-    return {x: all_paths.get(x) for x in img_names}
+    all_paths = {osp.basename(x): x for x in futils.path_get_file_list(image_folder, ["image"])}
+    return {x: all_paths.get(x) for x in img_names} if img_names else all_paths
 
 
-def get_img_paths(image_folder: str, img_names: Sequence[str]) -> np.array:
+def get_img_paths(image_folder: str, img_names: Sequence[str] = None) -> np.array:
     """Given files root folder and their unique names returns corresponding paths from the given root"""
     img_names2paths = map_img_paths(image_folder, img_names)
     return np.array([x for x in img_names2paths.values()])
