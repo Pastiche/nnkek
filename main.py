@@ -7,7 +7,7 @@ from nnkek.encoders import Autoencoder, get_dummy_batch
 from nnkek.imagers import imshow
 from nnkek.datasets import ImDataset, ImAugDataset, ArrayDataset
 from nnkek.plotters import im_grid
-from nnkek.utils import map_img_paths
+from nnkek.utils import map_img_paths, get_img_paths
 from nnkek.validation import TopKComparator, BootsTrapper, print_confidence_interval
 
 import matplotlib.pyplot as plt
@@ -132,13 +132,19 @@ def test_oss_dataset():
     #     pin_memory=True)
 
 
-def test_map_img_paths():
+def test_img_paths():
     mapping = map_img_paths(image_folder="data/dummy/img", img_names=["989851184_9ef368e520.jpg", "kek.jpg"])
     print(mapping)
     mapping = map_img_paths(
         image_folder="data/dummy/img", img_names=["989851184_9ef368e520.jpg", "kek.jpg"], none_if_absent=False
     )
     print(mapping)
+    path_list = get_img_paths(image_folder="data/dummy/img", img_names=["989851184_9ef368e520.jpg", "kek.jpg"])
+    print(path_list)
+    path_list = get_img_paths(
+        image_folder="data/dummy/img", img_names=["989851184_9ef368e520.jpg", "kek.jpg"], preserve_shape=False
+    )
+    print(path_list)
 
 
 if __name__ == "__main__":
@@ -150,4 +156,4 @@ if __name__ == "__main__":
     # test_safe_index()
     # test_array_dataset()
     # test_vectorizer_torch()
-    test_map_img_paths()
+    test_img_paths()

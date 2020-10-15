@@ -186,5 +186,10 @@ def map_img_paths(image_folder: str, img_names: Sequence[str] = None, none_if_ab
 
 def get_img_paths(image_folder: str, img_names: Sequence[str] = None, preserve_shape=True) -> np.array:
     """Given files root folder and their unique names returns corresponding paths from the given root"""
-    img_names2paths = map_img_paths(image_folder, img_names, none_if_absent=preserve_shape)
-    return np.array([x for x in img_names2paths.values()])
+    name2path = map_img_paths(image_folder, img_names, none_if_absent=preserve_shape)
+
+    paths = []
+    for img_name, img_path in name2path.items():
+        paths.append(img_path)
+
+    return np.array(paths)
