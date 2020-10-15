@@ -189,7 +189,7 @@ def get_img_paths(image_folder: str, img_names: Sequence[str] = None, preserve_s
     name2path = map_img_paths(image_folder, img_names, none_if_absent=preserve_shape)
 
     paths = []
-    for img_name, img_path in name2path.items():
-        paths.append(img_path)
+    for img_name in img_names:
+        paths.append(name2path.get(img_name))
 
     return np.array(paths)
