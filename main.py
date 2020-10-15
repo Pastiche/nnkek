@@ -7,6 +7,7 @@ from nnkek.encoders import Autoencoder, get_dummy_batch
 from nnkek.imagers import imshow
 from nnkek.datasets import ImDataset, ImAugDataset, ArrayDataset
 from nnkek.plotters import im_grid
+from nnkek.utils import map_img_paths
 from nnkek.validation import TopKComparator, BootsTrapper, print_confidence_interval
 
 import matplotlib.pyplot as plt
@@ -131,12 +132,22 @@ def test_oss_dataset():
     #     pin_memory=True)
 
 
+def test_map_img_paths():
+    mapping = map_img_paths(image_folder="data/dummy/img", img_names=["989851184_9ef368e520.jpg", "kek.jpg"])
+    print(mapping)
+    mapping = map_img_paths(
+        image_folder="data/dummy/img", img_names=["989851184_9ef368e520.jpg", "kek.jpg"], none_if_absent=False
+    )
+    print(mapping)
+
+
 if __name__ == "__main__":
     # img = cv2.imread('data/Flicker8k/Flicker8k_Dataset/667626_18933d713e.jpg')
     # print(img.shape)
     # test_aug()
     # test_vectorizer()
     # test_tf_dataset()
-    test_safe_index()
+    # test_safe_index()
     # test_array_dataset()
     # test_vectorizer_torch()
+    test_map_img_paths()
