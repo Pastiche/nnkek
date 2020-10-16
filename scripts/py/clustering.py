@@ -1,20 +1,21 @@
 __author__ = "n01z3"
 
 import argparse
-
 import os.path as osp
 import sys
 import time
-import numpy as np
-import pandas as pd
-
 from glob import glob
 from typing import Sequence
 
-from scipy.spatial.distance import cdist
+import numpy as np
+import pandas as pd
 from disjoint_set import DisjointSet
+from scipy.spatial.distance import cdist
+from sklearn.decomposition import PCA
+from tqdm import tqdm
 
-from nnkek.utils import batch_parallel
+from nnkek.utils.math import cdist_batch_parallel
+from nnkek.utils.process import batch_parallel
 
 
 def parse_args() -> argparse.Namespace:
@@ -22,14 +23,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--input_folder",
         type=str,
-        default="predict",
+        default="predict/ru",
         help="image features folder with npz files with fields: sample_ids, embeddings (sample_ids are image names)",
     )
 
     parser.add_argument(
         "--output_folder",
         type=str,
-        default="tables/clusters",
+        default="tables/clusters/ru",
         help="path folder with image features and categories",
     )
 
@@ -54,7 +55,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--phash_csv",
         type=str,
-        default="tables/phash.csv",
+        default="tables/phash_ru.csv",
     )
 
     parser.add_argument(
@@ -62,6 +63,15 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=-1,
     )
+
+    parser.add_argument(
+        "--pca_threshold",
+        type=int,
+        default=30000,
+        help="number of rows exceeds this value, pca will be applied to embeddings",
+    )
+
+    parser.add_argument("--hard_pca_dim", type=int, default=400)
 
     parser.add_argument(
         "--batch_size",
@@ -88,7 +98,7 @@ def build_disjoint_sets(neighbourhoods: Sequence[Sequence[int]]):
 
     ds = DisjointSet()
 
-    for element, neighbourhood in enumerate(neighbourhoods):
+    for element, neighbourhood in enumerate(tqdm(neighbourhoods, total=len(neighbourhoods))):
         for neighbour in neighbourhood:
             ds.union(element, neighbour)
 
@@ -98,9 +108,15 @@ def build_disjoint_sets(neighbourhoods: Sequence[Sequence[int]]):
 
 
 def get_distance_sets(vectors: Sequence[Sequence[float]], threshold=5.0):
+    print("computing distances..")
     vectors = np.asarray(vectors)
-    distances = cdist(vectors, vectors)
+
+    distances = (
+        cdist(vectors, vectors) if len(vectors) < 100000 else cdist_batch_parallel(vectors)
+    )  # TODO: magic number!
+    print("getting neighbours..")
     neighbourhoods = [np.argwhere(x < threshold).flatten() for x in distances]  # includes zero-distance to itself
+    print("building sets..")
     return build_disjoint_sets(neighbourhoods)
 
 
@@ -116,6 +132,8 @@ def cluster_rec(
     # base
     if current_step >= steps:
         return df
+
+    print(f"clustering step {current_step}..")
 
     current_vectors_col = f"{vectors_col}_{current_step}" if current_step > 0 else vectors_col
     current_cluster_col = f"{cluster_col}_{current_step}" if current_step > 0 else cluster_col
@@ -138,27 +156,10 @@ def cluster_rec(
     return pd.merge(df, centroids, on=current_cluster_col).drop(columns=[next_vectors_col])
 
 
-def test_cluster_rec(steps=3):
-    df = pd.DataFrame(
-        {"klaster": list("ABCBBDCDED"), "kektor": [np.random.randint(0, 10, 10) for _ in range(len("ABCDEFGHIJ"))]}
-    )
-
-    print(df)
-    print(df.shape)
-    res = cluster_rec(
-        df, cluster_col="klaster", vectors_col="kektor", steps=steps, threshold=5.0, threshold_multiplier=1.5
-    )
-    print(res)
-
-
-def test_disjoint_sets():
-    # sets: [{0, 4, 5}, {1, 2, 3}]
-    neighborhoods = [[4, 5], [2], [1, 3], [2], [0], [0]]
-    sets = build_disjoint_sets(neighborhoods)
-    print(sets)  # [5, 3, 3, 3, 5, 5]
-
-
 def cluster(predictions_path, args):
+
+    # TODO сделать конфиг?
+    # TODO отрефакторить)
     output_path, category_id = get_output_path(predictions_path, args)
     print(category_id)
 
@@ -173,8 +174,8 @@ def cluster(predictions_path, args):
         {"item_image_name": [osp.basename(x) for x in tfz["sample_ids"]], "embeddings": list(tfz["embeddings"])}
     ).drop_duplicates(["item_image_name"])
 
-    if args.verbose:
-        print(embeddings_df.shape[0], " embeddings")
+    # if args.verbose:
+    print(embeddings_df.shape[0], " rows")
 
     # filter hashes
     hash_df = total_hash_df[total_hash_df.item_image_name.isin(embeddings_df.item_image_name)]
@@ -189,10 +190,31 @@ def cluster(predictions_path, args):
     if args.verbose:
         print("clustering..")
 
+    if args.verbose:
+        print("group by hash..")
+
     # group by hash and assign initial clusters
     sample_df = embeddings_df.groupby("phash").sample(random_state=42)
+    if args.verbose:
+        print(f"{sample_df.shape[0]} rows after grouping by hash ")
+
+    # TODO: исправить кудрявую логику здесь
+    dim_reduction_coef = (sample_df.shape[0] // args.pca_threshold) + 1
+    if dim_reduction_coef > 1 or args.hard_pca_dim:
+        old_feats = sample_df.embeddings.values.tolist()
+        pca_dim = len(old_feats[0]) // dim_reduction_coef
+        if args.verbose:
+            print(f"number of rows {sample_df.shape[0]} is too high, applying pca. dim={pca_dim}..")
+
+        pca = PCA(n_components=args.hard_pca_dim if args.hard_pca_dim else pca_dim)
+        sample_df.embeddings = list(pca.fit_transform(old_feats))
+
+    if args.verbose:
+        print("clustering by phash..")
     sample_df["cluster"] = get_distance_sets(sample_df.embeddings.values.tolist(), args.threshold)
 
+    if args.verbose:
+        print("deep clustering..")
     deep_clusters = cluster_rec(sample_df, steps=args.steps, threshold=args.threshold)
 
     res = pd.merge(embeddings_df, deep_clusters, on="phash", suffixes=("", "_tmp"))
@@ -236,11 +258,16 @@ def main():
     print("Parallel clustering..")
     time.sleep(3)
 
-    batch_parallel(embeddings_paths, cluster, batch_size=args.batch_size, n_jobs=args.num_threads, args=args)
+    # TODO убрать вообще этот БАТЧ параллел здесь? И сделать, чтобы нельзя было cdist_parallel когда батчи
+    # TODO сделать 2 версии - для одного файла параллельно и для набора файлов - каждый файл - в отдельном потоке,
+    # хотя... вторая версия мб и не нужна! Нужен больше лишь тот скрипт, что я скидывал Артуру, но параллелизовнный нормально
+    # а его уже запускать последовательно для каждой категории! да! Плюс привязка к категориям - слишком конретно
+
+    if len(embeddings_paths) == 1:
+        cluster(embeddings_paths[0], args=args)
+    else:
+        batch_parallel(embeddings_paths, cluster, batch_size=args.batch_size, n_jobs=args.num_threads, args=args)
 
 
 if __name__ == "__main__":
     main()
-    # check_npz()
-    # test_disjoint_sets()
-    # test_cluster_rec(steps=10)

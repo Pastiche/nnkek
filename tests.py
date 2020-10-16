@@ -1,16 +1,21 @@
+import random
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 from torch.utils.data import DataLoader
 
 from nnkek import dummies, embeddings
 from nnkek.augmentation import get_default_transforms
+from nnkek.datasets import ImDataset, ImAugDataset, ArrayDataset
 from nnkek.embeddings import TfIndexableDataset, TorchImgVectorizer
 from nnkek.encoders import Autoencoder, get_dummy_batch
 from nnkek.imagers import imshow
-from nnkek.datasets import ImDataset, ImAugDataset, ArrayDataset
 from nnkek.plotters import im_grid
-from nnkek.utils import map_img_paths, get_img_paths
+from nnkek.utils.math import cdist_batch_parallel, cdist_batch
+from nnkek.utils.path import map_img_paths, get_img_paths
 from nnkek.validation import TopKComparator, BootsTrapper, print_confidence_interval
-
-import matplotlib.pyplot as plt
+from scripts.py.clustering import build_disjoint_sets, cluster_rec
 
 
 def test_load_aug_vect_enc():
@@ -147,13 +152,53 @@ def test_img_paths():
     print(path_list)
 
 
+def test_cluster_rec(steps=3):
+    df = pd.DataFrame(
+        {"klaster": list("ABCBBDCDED"), "kektor": [np.random.randint(0, 10, 10) for _ in range(len("ABCDEFGHIJ"))]}
+    )
+
+    print(df)
+    print(df.shape)
+    res = cluster_rec(
+        df, cluster_col="klaster", vectors_col="kektor", steps=steps, threshold=5.0, threshold_multiplier=1.5
+    )
+    print(res)
+
+
+def test_disjoint_sets():
+    # sets: [{0, 4, 5}, {1, 2, 3}]
+    neighborhoods = [[4, 5], [2], [1, 3], [2], [0], [0]]
+    sets = build_disjoint_sets(neighborhoods)
+    print(sets)  # [5, 3, 3, 3, 5, 5]
+
+
+def test_cdist_batch():
+    vectors_raw = [[random.randint(0, 10) for _ in range(4)] for _ in range(100)]
+    vectors = np.asarray(vectors_raw)
+    distances = cdist_batch(vectors, batch_size=2)
+    print(distances)
+    print(distances.shape)
+
+
+def test_cdist_batch_parallel():
+    vectors_raw = [[random.randint(0, 10) for _ in range(4)] for _ in range(100)]
+    vectors = np.asarray(vectors_raw)
+    print(vectors.shape)
+    distances = cdist_batch_parallel(vectors)
+    print(distances)
+    print(distances.shape)
+    print(len(distances))
+
+
 if __name__ == "__main__":
-    # img = cv2.imread('data/Flicker8k/Flicker8k_Dataset/667626_18933d713e.jpg')
-    # print(img.shape)
     # test_aug()
     # test_vectorizer()
     # test_tf_dataset()
     # test_safe_index()
     # test_array_dataset()
-    # test_vectorizer_torch()
+    # test_vectorizer_torch() # TODO: fix transform (takes PIL image, while I give torch.Tensor)
     test_img_paths()
+    test_cdist_batch_parallel()
+    test_cdist_batch()
+    test_disjoint_sets()
+    test_cluster_rec()

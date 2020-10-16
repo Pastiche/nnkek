@@ -1,82 +1,11 @@
 import asyncio
 import multiprocessing as mp
 from functools import partial
-from functools import reduce
-from tools.util import file_utils as futils
-from typing import Dict, Callable, Any, Sequence, Mapping
-import numpy as np
-import os.path as osp
+from typing import Callable, Any, Sequence
 
 from tqdm import tqdm
 
 
-# container traversing
-def get_by_path(container: Mapping[str, Any], path: str, default: Any = None) -> Any:
-    """
-    Retrieves a value from the container using a specified path.
-    If the path goes through a list, the first element is taken.
-    :param container: initial mapping container
-    :param path: nested path with a full stop separator
-    :param default: default value to return if path is invalid or no value found
-    :return a value found in the container using path or default value
-    """
-
-    def func(container: Dict[str, Any], key):
-        if not container:
-            return None
-
-        if isinstance(container, Mapping):
-            return container.get(key)
-
-        if not isinstance(container, list):
-            return None
-
-        if isinstance(container[0], Mapping):
-            return container[0].get(key)
-
-        return None
-
-    value = reduce(func, path.split("."), container)
-    return value if value is not None else default
-
-
-def get_list_column(dictionary, list_path, column):
-    collection = get_by_path(dictionary, list_path)
-
-    if not collection:
-        return None
-
-    if not isinstance(collection, list):
-        return None
-
-    if not isinstance(collection[0], dict):
-        return None
-
-    return [get_by_path(element, column) for element in collection]
-
-
-def get_list_element_field(container: Mapping[str, Any], list_path: str, field: str, element_index: int) -> Any:
-    """
-    Returns a value of the selected list element field. The list is acquired
-    from the container using a specified path.
-    :param container: a mapping container for list to search
-    :param list_path: path to a list with a full stop separator
-    :param field: the name of the field which value to return
-    :param element_index: index of the list element which's field value to
-    return
-    """
-    list_column = get_list_column(container, list_path, field)
-
-    if not list_column:
-        return None
-
-    if len(list_column) < element_index + 1:
-        return None
-
-    return list_column[element_index]
-
-
-# parallel mapping
 async def map_io(sequence: Sequence[Any], worker: Callable, **worker_kwargs) -> Sequence[Any]:
     """
     Асинхронно (IO) маппит последовательность.
@@ -165,31 +94,3 @@ def parallel_processor(sequence: Sequence[Any], worker: Callable, n_jobs=-1, **w
         results = pool.map(partial(worker, **worker_kwargs), sequence)
 
     return results
-
-
-# paths manipulations
-def map_img_paths(image_folder: str, img_names: Sequence[str] = None, none_if_absent=True) -> dict:
-    """Given files root folder and their unique names returns mapping to corresponding paths from the given root"""
-    all_paths = {osp.basename(x): x for x in futils.path_get_file_list(image_folder, ["image"])}
-
-    if not img_names:
-        return all_paths
-
-    name2path = {}
-    for x in img_names:
-        img_path = all_paths.get(x)
-        if img_path or none_if_absent:
-            name2path[x] = img_path
-
-    return name2path
-
-
-def get_img_paths(image_folder: str, img_names: Sequence[str] = None, preserve_shape=True) -> np.array:
-    """Given files root folder and their unique names returns corresponding paths from the given root"""
-    name2path = map_img_paths(image_folder, img_names, none_if_absent=preserve_shape)
-
-    paths = []
-    for img_name in img_names:
-        paths.append(name2path.get(img_name))
-
-    return np.array(paths)

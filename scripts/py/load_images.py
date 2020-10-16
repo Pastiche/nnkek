@@ -19,13 +19,13 @@ Options:
 
 import multiprocessing as mp
 import os
-from functools import partial
-from typing import Callable, Any, Sequence
 from time import sleep
 
 import requests
 from PIL import Image
 from docopt import docopt
+
+from nnkek.utils import parallel_processor
 
 args = docopt(__doc__)
 
@@ -66,37 +66,6 @@ def pil_download_image_by_aeid(image_aeid: str, dump_dir: str, overwrite=False, 
         overwrite=overwrite,
         verbose=verbose,
     )
-
-
-def parallel_processor(sequence: Sequence[Any], worker: Callable, n_jobs=-1, **worker_kwargs) -> Sequence[Any]:
-    """
-    Параллельный преобразователь последовательности.
-
-    :param sequence: последовательность
-    :param worker: функция-обработчик последовательности
-    :param worker_kwargs: аргументы вызова обработчика
-    :param n_jobs: число используемых процессов (по-умолчанию, все доступные)
-    :return: преобразованная последовательность
-    """
-    if n_jobs == -1:
-        n_jobs = mp.cpu_count() - 1
-
-    if not isinstance(n_jobs, int) or n_jobs < 1:
-        raise ValueError(f"Got invalid n_jobs argument: {n_jobs}")
-
-    if n_jobs == 1:
-        return worker(sequence, **worker_kwargs)
-
-    with mp.Pool(processes=n_jobs) as pool:
-        results = pool.map(partial(worker, **worker_kwargs), sequence)
-
-    return results
-
-
-def increase_value(value):
-    with value.get_lock():
-        value.value += 1
-        return value.value
 
 
 if __name__ == "__main__":
