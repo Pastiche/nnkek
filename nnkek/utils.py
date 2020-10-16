@@ -172,7 +172,7 @@ def map_img_paths(image_folder: str, img_names: Sequence[str] = None, none_if_ab
     """Given files root folder and their unique names returns mapping to corresponding paths from the given root"""
     all_paths = {osp.basename(x): x for x in futils.path_get_file_list(image_folder, ["image"])}
 
-    if len(img_names) == 0:
+    if not img_names:
         return all_paths
 
     name2path = {}
