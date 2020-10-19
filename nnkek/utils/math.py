@@ -21,6 +21,9 @@ def cdist_batch(XA: np.ndarray, XB: np.ndarray = None, batch_size=1000):
 
 
 def cdist_batch_parallel(XA: np.ndarray, XB: np.ndarray = None, batch_size=1000, n_jobs=-1):
+    if n_jobs == 1:
+        cdist_batch(XA, batch_size=batch_size)
+
     if not XB:
         XB = XA
 
