@@ -16,7 +16,7 @@ def is_valid_image(img):
         if isinstance(img, str):
             img = Image.open(img)
         img.verify()
-    except (IOError, SyntaxError):
+    except:
         return False
     return True
 
