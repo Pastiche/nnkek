@@ -9,9 +9,10 @@ from nnkek import dummies, embeddings
 from nnkek.augmentation import get_default_transforms
 from nnkek.datasets import ImDataset, ImAugDataset, ArrayDataset
 from nnkek.embeddings import TfIndexableDataset, TorchImgVectorizer
-from nnkek.encoders import Autoencoder, get_dummy_batch
+from nnkek.encoders import Autoencoder
 from nnkek.imagers import imshow
 from nnkek.plotters import im_grid
+from nnkek.utils.common import get_dummy_tensor
 from nnkek.utils.math import cdist_batch_parallel, cdist_batch
 from nnkek.utils.path import map_img_paths, get_img_paths
 from nnkek.validation import TopKComparator, BootsTrapper, print_confidence_interval
@@ -106,7 +107,7 @@ def test_tf_dataset():
 
 def test_encoder_bootstrap():
     encoder = Autoencoder()
-    raw = get_dummy_batch(16)
+    raw = get_dummy_tensor(16)
     encoded = encoder.encode(raw)
 
     comparator = TopKComparator(raw, encoded)

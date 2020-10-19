@@ -1,17 +1,11 @@
 from datetime import datetime
 
 import torch
-from torch import cuda, optim
 import torch.nn as nn
 import torch.nn.functional as F
+from torch import optim
 
-
-def get_device():
-    return "cuda:0" if cuda.is_available() else "cpu"
-
-
-def get_dummy_batch(batch_size=16):
-    return torch.FloatTensor(batch_size, 2048).uniform_(-10, 10)
+from nnkek.utils.common import get_device
 
 
 class Autoencoder(nn.Module):
