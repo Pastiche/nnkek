@@ -1,32 +1,19 @@
 import numpy as np
 from scipy.spatial.distance import cdist
-from tqdm import tqdm
 
-from nnkek.utils.common import make_batches
-from nnkek.utils.process import parallel_processor
+from nnkek.utils.process import batch_parallel, iter_batch, iter_batch_parallel
 
 
 def cdist_batch(XA: np.ndarray, XB: np.ndarray = None, batch_size=1000):
-    if not XB:
-        XB = XA
+    XB = XB or XA
+    return iter_batch(XA, cdist, batch_size, XB=XB)
 
-    batches = make_batches(XA, batch_size)
-    res = []
 
-    for batch in tqdm(batches):  # по сути дата лоадер
-        batch_dists = cdist(batch, XB)
-        res.append(batch_dists)
-
-    return np.concatenate(res)
+def cdist_iter_batch_parallel(XA: np.ndarray, XB: np.ndarray = None, batch_size=1000, n_jobs=-1):
+    XB = XB or XA
+    return iter_batch_parallel(XA, cdist, n_jobs, batch_size, XB=XB)
 
 
 def cdist_batch_parallel(XA: np.ndarray, XB: np.ndarray = None, batch_size=1000, n_jobs=-1):
-    if n_jobs == 1:
-        cdist_batch(XA, batch_size=batch_size)
-
-    if not XB:
-        XB = XA
-
-    batches = make_batches(XA, batch_size)
-    res = parallel_processor(sequence=batches, worker=cdist, n_jobs=n_jobs, XB=XB)
-    return res[0]
+    XB = XB or XA
+    return batch_parallel(XA, cdist, n_jobs, batch_size, XB=XB)

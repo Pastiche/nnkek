@@ -13,7 +13,7 @@ from nnkek.encoders import Autoencoder
 from nnkek.imagers import imshow
 from nnkek.plotters import im_grid
 from nnkek.utils.common import get_dummy_tensor
-from nnkek.utils.math import cdist_batch_parallel, cdist_batch
+from nnkek.utils.math import cdist_batch_parallel, cdist_batch, cdist_iter_batch_parallel
 from nnkek.utils.path import map_img_paths, get_img_paths
 from nnkek.validation import TopKComparator, BootsTrapper, print_confidence_interval
 from scripts.py.clustering import build_disjoint_sets, cluster_rec
@@ -181,6 +181,16 @@ def test_cdist_batch():
     print(distances.shape)
 
 
+def test_cdist_iter_batch_parallel():
+    vectors_raw = [[random.randint(0, 10) for _ in range(4)] for _ in range(100)]
+    vectors = np.asarray(vectors_raw)
+    print(vectors.shape)
+    distances = cdist_iter_batch_parallel(vectors)
+    print(distances)
+    print(distances.shape)
+    print(len(distances))
+
+
 def test_cdist_batch_parallel():
     vectors_raw = [[random.randint(0, 10) for _ in range(4)] for _ in range(100)]
     vectors = np.asarray(vectors_raw)
@@ -198,8 +208,9 @@ if __name__ == "__main__":
     # test_safe_index()
     # test_array_dataset()
     # test_vectorizer_torch() # TODO: fix transform (takes PIL image, while I give torch.Tensor)
-    test_img_paths()
+    # test_img_paths()
+    # test_cdist_batch_parallel()
+    # test_cdist_batch()
     test_cdist_batch_parallel()
-    test_cdist_batch()
-    test_disjoint_sets()
-    test_cluster_rec()
+    # test_disjoint_sets()
+    # test_cluster_rec()
