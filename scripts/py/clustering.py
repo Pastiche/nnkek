@@ -3,17 +3,21 @@ __author__ = "akaiashi"
 import argparse
 import multiprocessing as mp
 import os.path as osp
+import random
 import sys
 from typing import Sequence
 
+import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 from disjoint_set import DisjointSet
+from nnkek import plotters, utils as kutils
+from nnkek.utils.math import dist_batch_parallel, dist_batch
 from scipy.spatial.distance import cdist
 from sklearn.decomposition import PCA
 from timm.utils import *
 from tqdm import tqdm
-
-from nnkek.utils.math import cdist_batch_parallel, cdist_batch
+import logging
 
 
 def parse_args() -> argparse.Namespace:
@@ -37,7 +41,7 @@ def parse_args() -> argparse.Namespace:
         "--phash_csv",
         type=str,
         default=None,
-        help="path to csv with fields image_name, phash. If provided first round clustering will be performed by phash",
+        help="path to csv with fields item_image_name, phash. If provided first round clustering will be performed by phash",
     )
 
     parser.add_argument(
@@ -73,6 +77,8 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument("--pca_dim", type=int, default=None, help="number of pca components")
 
+    parser.add_argument("--verbose", type=bool, default=False, help="logging_lvl = DEBUG if args.verbose else INFO")
+
     return parser.parse_args()
 
 
@@ -84,7 +90,10 @@ def build_disjoint_sets(neighbourhoods: Sequence[Sequence[int]]):
 
     ds = DisjointSet()
 
-    for element, neighbourhood in enumerate(tqdm(neighbourhoods)):
+    if logging.getLogger().level <= logging.DEBUG:
+        neighbourhoods = tqdm(neighbourhoods)
+
+    for element, neighbourhood in enumerate(neighbourhoods):
         for neighbour in neighbourhood:
             ds.union(element, neighbour)
 
@@ -94,9 +103,9 @@ def build_disjoint_sets(neighbourhoods: Sequence[Sequence[int]]):
 
 
 def get_distance_sets(vectors: Sequence[Sequence[float]], threshold=5.0, batch_size=None, n_jobs=-1):
-    logging.info("computing distances..")
+    logging.debug("computing distances..")
     vectors = np.asarray(vectors)
-    logging.info(f"vectors mean: {vectors.mean()}, std: {vectors.std()}")
+    logging.debug(f"vectors mean: {vectors.mean()}, std: {vectors.std()}")
 
     if n_jobs == -1:
         n_jobs = mp.cpu_count() - 1
@@ -104,15 +113,18 @@ def get_distance_sets(vectors: Sequence[Sequence[float]], threshold=5.0, batch_s
     if n_jobs != 1:
         if not batch_size:
             batch_size = vectors.shape[0] // n_jobs
-        distances = cdist_batch_parallel(vectors, batch_size=batch_size, n_jobs=n_jobs)
+        distances = dist_batch_parallel(vectors, batch_size=batch_size, n_jobs=n_jobs)
     else:
-        distances = cdist_batch(vectors, batch_size=batch_size) if batch_size else cdist(vectors, vectors)
+        distances = dist_batch(vectors, batch_size=batch_size) if batch_size else cdist(vectors, vectors)
 
-    logging.info("getting neighbours..")
+    logging.debug(f"distances mean: {distances.mean()}, std: {distances.std()}")
+
+    logging.debug("getting neighbours..")
     neighbourhoods = [np.argwhere(x < threshold).flatten() for x in distances]  # includes zero-distance to itself
-    logging.info("mean neighborhood size: ".format(np.mean([len(x) for x in neighbourhoods])))
 
-    logging.info("building sets..")
+    logging.debug("mean neighborhood size: {}".format(np.mean([x.shape[0] for x in neighbourhoods])))
+
+    logging.debug("building sets..")
     return build_disjoint_sets(neighbourhoods)
 
 
@@ -131,7 +143,7 @@ def cluster_rec(
     if current_step >= steps:
         return df
 
-    logging.info(f"clustering step {current_step}..")
+    logging.debug(f"clustering step {current_step}..")
 
     current_vectors_col = f"{vectors_col}_{current_step}" if current_step > 0 else vectors_col
     current_cluster_col = f"{cluster_col}_{current_step}" if current_step > 0 else cluster_col
@@ -159,19 +171,17 @@ def cluster_rec(
 
 
 def cluster_by_phash(df, args):
-    logging.info("clustering by phash..")
+    logging.debug("clustering by phash..")
 
-    logging.info("loading hash..")
-    total_hash_df = pd.read_csv(args.phash_csv).drop_duplicates(["image_name"])
-    hash_df = total_hash_df[total_hash_df.image_name.isin(df.image_name)]
+    logging.debug("loading hash..")
+    total_hash_df = pd.read_csv(args.phash_csv).drop_duplicates(["item_image_name"])
 
-    logging.info("group embeddings by hash..")
-    df = pd.merge(df, hash_df, on="image_name", suffixes=("", "_tmp"))
+    hash_df = total_hash_df[total_hash_df.item_image_name.isin(df.item_image_name)]
+
+    logging.debug("group embeddings by hash..")
+    df = pd.merge(df, hash_df, on="item_image_name", suffixes=("", "_tmp"))
+
     sample_df = df.groupby("phash").sample(random_state=42)
-
-    sample_df.embeddings = (
-        reduce_dim(sample_df.embeddings.values.tolist(), n_components=args.pca) if args.pca else sample_df.empeddings
-    )
 
     # build clusters on phash
     sample_df["cluster"] = get_distance_sets(
@@ -185,51 +195,99 @@ def cluster_by_phash(df, args):
 
 
 def reduce_dim(embeddings: Sequence[Sequence[float]], n_components):
-    if not n_components:
+    n_samples, n_features = len(embeddings), len(embeddings[0])
+
+    if not n_components or n_components >= min(n_samples, n_features):
         return embeddings
-    logging.info("applying pca..")
+    logging.debug("applying pca..")
 
     pca = PCA(n_components=n_components)
     return list(pca.fit_transform(embeddings))
 
 
+def check_clusters(clusters_csv_path="/tmp/clusters.csv", img_folder="/data/shared/aliimage_ru/"):
+    df = pd.read_csv(clusters_csv_path)
+    df["path"] = kutils.path.get_img_paths(img_folder, df.item_image_name)
+    plot_clusters(df, depth=1, n_clusters=5, img_per_cluster=5)
+
+
+def plot_clusters(df, depth=1, n_clusters=5, img_per_cluster=5):
+    """depth=0 means split will be performed by initial clusters (which are probably just image ids)"""
+
+    cluster_col = f"cluster_{depth}" if depth > 0 else "cluster"
+
+    groups = [x for _, x in df.groupby(cluster_col)]
+    random.shuffle(groups)
+
+    print(f"Total data: {df.shape[0]}")
+    print(f"Depth: {depth}")
+    print(f"N clusters: {len(groups)}")
+
+    i = 0
+    for group in groups:
+        if group.shape[0] < img_per_cluster:
+            continue
+        if i >= n_clusters:
+            break
+        i += 1
+
+        sample = group.sample(img_per_cluster)
+
+        fig, ax = plotters.im_grid(sample.path.values, nrows=1, ncols=len(sample.path), figsize=(14, 4))
+        for axi in ax.flat:
+            axi.axis("off")
+
+        fig.tight_layout()
+        plt.show()
+
+
 def main():
-    setup_default_logging()
     args = parse_args()
 
+    logging_lvl = logging.DEBUG if args.verbose else logging.INFO
+    setup_default_logging(logging_lvl, log_path="/var/log/cluster.log")
+
+    logging.info(f"starting: {args.input_npz}")
+    logging.debug(args)
+
+    if osp.exists(args.output_csv):
+        logging.info(f"{args.output_csv} already exists, terminating..")
+        exit()
+
     # get embeddings
-    tfz = np.load(args.input_npz_path)
+    tfz = np.load(args.input_npz)
     df = pd.DataFrame.from_dict(
         {
-            "image_name": [osp.basename(x) for x in tfz[args.image_name_key]],
-            "embeddings": list(tfz[args.embeddings_key]),
+            "item_image_name": [osp.basename(x) for x in tfz["sample_ids"]],
+            "embeddings": list(tfz["embeddings"]),
         }
-    ).drop_duplicates(["image_name"])
+    ).drop_duplicates(["item_image_name"])
 
     logging.info(f"{df.shape[0]} embeddings")
+
+    if args.pca_dim:
+        df.embeddings = reduce_dim(df.embeddings.values.tolist(), n_components=args.pca_dim)
 
     if args.phash_csv:
         df["cluster"] = cluster_by_phash(df, args)
     else:
-        df.embeddings = reduce_dim(df.embeddings.values.tolist(), n_components=args.pca) if args.pca else df.embeddings
         df["cluster"] = list(range(df.shape[0]))
 
-    logging.info(df.head())
-    logging.info("deep clustering..")
+    logging.debug("deep clustering..")
 
     # build clusters
     res = cluster_rec(df, steps=args.steps, threshold=args.threshold, threshold_step=args.threshold_step)
 
-    logging.info(res.head())
-    logging.info(res.shape)
+    logging.debug(res.head())
+    logging.debug(res.shape)
 
     for col in res.columns:
         if col.startswith("cluster"):
-            logging.info(f"number of clusters, {col}: ", res[col].nunique())
+            logging.debug(f"number of clusters, {col}: {res[col].nunique()}")
 
     res.to_csv(args.output_csv, index=False)
 
-    logging.info("finished")
+    logging.info(f"finished: {args.output_csv}")
 
 
 if __name__ == "__main__":

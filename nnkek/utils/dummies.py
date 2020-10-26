@@ -1,6 +1,8 @@
 import os
 
 import numpy as np
+import pandas as pd
+import torch
 
 DUMMY_IMG_DIR = "data/dummy/img"
 DUMMY_ARRAY_DIR = "data/dummy/txt"
@@ -25,3 +27,11 @@ arr_paths = np.array([os.path.join(DUMMY_ARRAY_DIR, x) for x in arr_names])
 # these won't work since the root dir is not suitable
 # ims = np.array([pil_load_image(x) for x in im_paths])
 # arrays = np.array([np.loadtxt(x) for x in arr_paths])
+
+
+def get_dummy_tensor(batch_size=16):
+    return torch.FloatTensor(batch_size, 2048).uniform_(-10, 10)
+
+
+def get_dummy_df():
+    return pd.DataFrame({"A": ["lupa", "pupa", "lol", "kek"], "B": [1, 2, 5, 4]})

@@ -75,8 +75,8 @@ def iter_batch_parallel(
     """
     res = []
     with tqdm() as pbar:
-        for i in range(0, len(sequence), batch_size):
-            batch = sequence[i : i + batch_size]
+        batches = make_batches(sequence, batch_size)
+        for batch in batches:
 
             responses_batch = parallel_processor(batch, worker, n_jobs, **worker_kwargs)
             res.extend(responses_batch)

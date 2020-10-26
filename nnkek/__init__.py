@@ -1,7 +1,6 @@
 __all__ = [
     "augmentation",
     "datasets",
-    "dummies",
     "embeddings",
     "encoders",
     "imagers",

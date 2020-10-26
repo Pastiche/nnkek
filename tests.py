@@ -1,19 +1,21 @@
 import random
+import time
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from torch.utils.data import DataLoader
 
-from nnkek import dummies, embeddings
+from nnkek import embeddings
 from nnkek.augmentation import get_default_transforms
 from nnkek.datasets import ImDataset, ImAugDataset, ArrayDataset
 from nnkek.embeddings import TfIndexableDataset, TorchImgVectorizer
 from nnkek.encoders import Autoencoder
 from nnkek.imagers import imshow
 from nnkek.plotters import im_grid
-from nnkek.utils.common import get_dummy_tensor
-from nnkek.utils.math import cdist_batch_parallel, cdist_batch, cdist_iter_batch_parallel
+from nnkek.utils import dummies
+from nnkek.utils.dummies import get_dummy_tensor
+from nnkek.utils.math import dist_batch_parallel, dist_batch
 from nnkek.utils.path import map_img_paths, get_img_paths
 from nnkek.validation import TopKComparator, BootsTrapper, print_confidence_interval
 from scripts.py.clustering import build_disjoint_sets, cluster_rec
@@ -160,9 +162,7 @@ def test_cluster_rec(steps=3):
 
     print(df)
     print(df.shape)
-    res = cluster_rec(
-        df, cluster_col="klaster", vectors_col="kektor", steps=steps, threshold=5.0, threshold_multiplier=1.5
-    )
+    res = cluster_rec(df, cluster_col="klaster", vectors_col="kektor", steps=steps, threshold=5.0, threshold_step=1.5)
     print(res)
 
 
@@ -176,32 +176,30 @@ def test_disjoint_sets():
 def test_cdist_batch():
     vectors_raw = [[random.randint(0, 10) for _ in range(4)] for _ in range(100)]
     vectors = np.asarray(vectors_raw)
-    distances = cdist_batch(vectors, batch_size=2)
+    distances = dist_batch(vectors, batch_size=2)
     print(distances)
     print(distances.shape)
-
-
-def test_cdist_iter_batch_parallel():
-    vectors_raw = [[random.randint(0, 10) for _ in range(4)] for _ in range(100)]
-    vectors = np.asarray(vectors_raw)
-    print(vectors.shape)
-    distances = cdist_iter_batch_parallel(vectors)
-    print(distances)
-    print(distances.shape)
-    print(len(distances))
 
 
 def test_cdist_batch_parallel():
     vectors_raw = [[random.randint(0, 10) for _ in range(4)] for _ in range(100)]
     vectors = np.asarray(vectors_raw)
     print(vectors.shape)
-    distances = cdist_batch_parallel(vectors)
+    distances = dist_batch_parallel(vectors)
     print(distances)
     print(distances.shape)
     print(len(distances))
 
 
+def profile(f, **args):
+    ts = time.time()
+    res = f(**args)
+    print(f"{f} {time.time() - ts}")
+    return res
+
+
 if __name__ == "__main__":
+    pass
     # test_aug()
     # test_vectorizer()
     # test_tf_dataset()
@@ -211,6 +209,6 @@ if __name__ == "__main__":
     # test_img_paths()
     # test_cdist_batch_parallel()
     # test_cdist_batch()
-    test_cdist_batch_parallel()
+    # test_cdist_batch_parallel()
     # test_disjoint_sets()
     # test_cluster_rec()

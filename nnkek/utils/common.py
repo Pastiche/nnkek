@@ -1,7 +1,7 @@
+import resource
 from functools import wraps
 from time import time
 from typing import Sequence, Any
-import pandas as pd
 
 import torch
 
@@ -32,9 +32,6 @@ def get_device():
     return "cuda:0" if torch.cuda.is_available() else "cpu"
 
 
-def get_dummy_tensor(batch_size=16):
-    return torch.FloatTensor(batch_size, 2048).uniform_(-10, 10)
-
-
-def get_dummy_df():
-    return pd.DataFrame({"A": ["lupa", "pupa", "lol", "kek"], "B": [1, 2, 5, 4]})
+def limit_memory(maxsize):
+    soft, hard = resource.getrlimit(resource.RLIMIT_AS)
+    resource.setrlimit(resource.RLIMIT_AS, (maxsize, hard))
