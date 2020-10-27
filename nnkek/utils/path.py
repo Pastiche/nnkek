@@ -26,7 +26,13 @@ def get_img_paths(image_folder: str, img_names: Sequence[str] = None, preserve_s
     name2path = map_img_paths(image_folder, img_names, none_if_absent=preserve_shape)
 
     paths = []
+
+    if img_names is None:
+        return np.array([x for x in name2path.values()])
+
     for img_name in img_names:
-        paths.append(name2path.get(img_name))
+        img_path = name2path.get(img_name)
+        if img_path or preserve_shape:
+            paths.append(img_path)
 
     return np.array(paths)

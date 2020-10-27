@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.metrics import pairwise_distances
 from scipy.spatial.distance import cdist
 
-from nnkek.utils.process import batch_parallel, iter_batch, iter_batch_parallel
+from nnkek.utils.process import batch_parallel, iter_batch
 
 
 def sk_dist(XA: np.ndarray, XB: np.ndarray = None, n_jobs=-1):
@@ -27,7 +27,8 @@ def sp_dist(XA: np.ndarray, XB: np.ndarray = None):
 
 def dist_batch(XA: np.ndarray, XB: np.ndarray = None, batch_size=1000, n_jobs=-1):
     """Split initial matrix into batches and processes them one by one. Each batch is processed with n_jobs processes
-    Deprecated. Proven to be VERY slow (as well as https://gist.github.com/rtavenar/a4fb580ae235cc61ce8cf07878810567)
+    DEPRECATED. Proven to be VERY slow (as well as https://gist.github.com/rtavenar/a4fb580ae235cc61ce8cf07878810567)
+    Here is only for reference.
     """
     if XB is None:
         XB = XA
@@ -36,8 +37,8 @@ def dist_batch(XA: np.ndarray, XB: np.ndarray = None, batch_size=1000, n_jobs=-1
 
 def dist_batch_parallel(XA: np.ndarray, XB: np.ndarray = None, batch_size=1000, n_jobs=-1):
     """Split initial matrix into batches and each batch with it's own process.
-    Deprecated. Proven to be VERY slow (as well as https://gist.github.com/rtavenar/a4fb580ae235cc61ce8cf07878810567)
-
+    DEPRECATED. Proven to be VERY slow (as well as https://gist.github.com/rtavenar/a4fb580ae235cc61ce8cf07878810567)
+    Here is only for reference.
     """
     if XB is None:
         XB = XA

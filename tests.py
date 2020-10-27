@@ -141,17 +141,32 @@ def test_oss_dataset():
 
 
 def test_img_paths():
+    # map, None if absent
     mapping = map_img_paths(image_folder="data/dummy/img", img_names=["989851184_9ef368e520.jpg", "kek.jpg"])
     print(mapping)
+
+    # map, don't include absent
     mapping = map_img_paths(
         image_folder="data/dummy/img", img_names=["989851184_9ef368e520.jpg", "kek.jpg"], none_if_absent=False
     )
     print(mapping)
+
+    # list, preserve shape
     path_list = get_img_paths(image_folder="data/dummy/img", img_names=["989851184_9ef368e520.jpg", "kek.jpg"])
     print(path_list)
+
+    # list, don't preserve shape
     path_list = get_img_paths(
         image_folder="data/dummy/img", img_names=["989851184_9ef368e520.jpg", "kek.jpg"], preserve_shape=False
     )
+    print(path_list)
+
+    # map, no filter
+    mapping = map_img_paths(image_folder="data/dummy/img")
+    print(mapping)
+
+    # list, no filter
+    path_list = get_img_paths(image_folder="data/dummy/img")
     print(path_list)
 
 
